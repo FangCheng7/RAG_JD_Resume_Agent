@@ -16,7 +16,7 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-echo [1/3] 安装 PyInstaller ...
+echo [1/4] 安装 PyInstaller ...
 ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check pyinstaller
 if errorlevel 1 (
     echo [错误] PyInstaller 安装失败
@@ -25,8 +25,18 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/3] 开始打包（首次约 5-15 分钟，请耐心等待）...
-".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean TalentMatchAI.spec
+echo [2/4] 开始打包（首次约 5-15 分钟，请耐心等待）...
+
+rem ------------------------------------------------------------
+rem 默认输出到项目下的 dist\TalentMatchAI\
+rem C 盘空间紧张的话，把下面两行改成 E 盘，例如：
+rem     set DIST=E:\TalentMatchAI_dist
+rem     set WORK=E:\TalentMatchAI_build
+rem ------------------------------------------------------------
+set DIST=dist
+set WORK=build
+
+".venv\Scripts\python.exe" -m PyInstaller --noconfirm --clean --distpath "%DIST%" --workpath "%WORK%" TalentMatchAI.spec
 if errorlevel 1 (
     echo [错误] 打包失败，请查看上面的报错
     pause
@@ -34,13 +44,24 @@ if errorlevel 1 (
 )
 
 echo.
-echo [3/3] 打包完成！
+echo [3/4] 复制使用说明到输出目录 ...
+if exist "启动说明.txt" (
+    copy /y "启动说明.txt" "%DIST%\TalentMatchAI\启动说明.txt" >nul
+    echo   已复制 启动说明.txt
+) else (
+    echo   [跳过] 没找到 启动说明.txt
+)
+
 echo.
-echo   输出目录：dist\TalentMatchAI\
-echo   可执行文件：dist\TalentMatchAI\TalentMatchAI.exe
+echo [4/4] 打包完成！
 echo.
-echo   把整个 TalentMatchAI 文件夹压缩后发给别人，
+echo   输出目录：%DIST%\TalentMatchAI\
+echo   可执行文件：%DIST%\TalentMatchAI\TalentMatchAI.exe
+echo.
+echo   把整个 TalentMatchAI 文件夹压缩成 zip 后发给别人，
 echo   对方解压双击 TalentMatchAI.exe 即可使用。
-echo   （首次运行需要联网下载 BGE-M3 模型，约 2.3GB）
+echo.
+echo   首次运行需要联网下载 BGE-M3 模型（约 2.3GB）；
+echo   也可以把已下好的 models\bge-m3 放到 exe 同级目录跳过。
 echo.
 pause

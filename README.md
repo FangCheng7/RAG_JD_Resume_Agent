@@ -1,9 +1,27 @@
 # JD-简历智能匹配 Agent
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)](https://www.python.org/)
+[![Platform](https://img.shields.io/badge/Platform-Windows-0078D6.svg)]()
+[![Release](https://img.shields.io/github/v/release/FangCheng7/jd-resume-matching-agent?label=Release&color=brightgreen)](https://github.com/FangCheng7/jd-resume-matching-agent/releases/latest)
+
 一个基于 **RAG + LangGraph** 的 JD / 简历智能匹配 AI Agent。
 
 上传岗位 JD 与候选人简历后，可以直接用自然语言完成检索、解析、匹配、
 候选人排序与对比。
+
+---
+
+## ⬇️ 不想装 Python？直接下载 exe
+
+到 **[Releases](https://github.com/FangCheng7/jd-resume-matching-agent/releases/latest)** 下载 `TalentMatchAI.zip`，
+解压后双击 `TalentMatchAI.exe` 即可使用（会自动打开浏览器）。
+
+> - 首次运行需要联网下载 BGE-M3 模型（约 2.3GB）；
+>   也可以把已下好的 `models/bge-m3` 文件夹放到 exe 同级目录，跳过这步。
+> - 详细说明见压缩包内的 `启动说明.txt`。
+> - 需要 VC++ 运行库（Win10/11 一般自带，老系统装
+>   [vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe) 即可）。
 
 ---
 
