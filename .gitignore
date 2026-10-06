@@ -1,0 +1,34 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test
+.pytest_cache/
+
+# Backups
+.backup/
+*.bak
+
+# Environment
+.env
+
+# User private configuration
+data/config.json
+
+# Local RAG data
+data/chroma/
+data/uploads/
+
+# Gradio
+.gradio/
+
+# 本地 Embedding 模型（体积大，不入库）
+models/
+
+# PyInstaller 打包产物（体积好几个 GB，不入库）
+build/
+dist/
+*.manifest
