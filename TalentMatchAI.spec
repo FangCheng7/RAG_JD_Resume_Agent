@@ -15,6 +15,8 @@ TalentMatch AI — PyInstaller 打包配置
     目录模式只在第一次解压，之后直接加载，启动只要十几秒。
 """
 
+import os
+
 from PyInstaller.utils.hooks import collect_all, collect_data_files
 
 
@@ -101,6 +103,56 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
+# ============================================================
+# 关键修复：剔除 PyInstaller 自动打包的 VC 运行库
+# ============================================================
+#
+# 踩过的坑：
+#
+#   PyInstaller 会把自己找到的 msvcp140.dll / vcruntime140.dll
+#   一起放进 _internal 目录，但它们的版本往往比系统自带的旧。
+#
+#   而 torch 需要较新的 VC 运行库，
+#   旧的把新的遮住之后，加载 DLL 就会失败：
+#
+#       OSError: [WinError 1114] 动态链接库(DLL)初始化例程失败
+#         Error loading "...\torch\lib\c10.dll" or one of its dependencies
+#
+#   表现就是：双击 exe 闪一下就没了，服务起不来。
+#
+# 解决办法：
+#
+#   不打包这几个 DLL，让程序直接使用系统自带的
+#   （torch 本来就要求机器上装了 VC++ 运行库）。
+#
+# 注意：VCOMP140.DLL 要保留，它是 OpenMP 运行库，
+#       且与系统版本一致，留着不会有冲突。
+
+EXCLUDE_VC_DLLS = {
+    "msvcp140.dll",
+    "msvcp140_1.dll",
+    "msvcp140_atomic_wait.dll",
+    "vcruntime140.dll",
+    "vcruntime140_1.dll",
+    "concrt140.dll",
+}
+
+# 只剔除「顶层」的那几个 DLL，也就是 _internal\msvcp140.dll 这种。
+#
+# 注意不要连子目录里的一起删：
+#   sklearn\.libs\msvcp140.dll 是 scikit-learn 自带的，
+#   它必须留在原位，否则会报
+#       Failed to load dynlib/dll '...\sklearn\.libs\msvcp140.dll'
+a.binaries = [
+    entry
+    for entry in a.binaries
+    if not (
+        os.path.basename(entry[0]).lower() in EXCLUDE_VC_DLLS
+        and os.path.dirname(entry[0]) in ("", ".")
+    )
+]
+
 
 pyz = PYZ(a.pure)
 
