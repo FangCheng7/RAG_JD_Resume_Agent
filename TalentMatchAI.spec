@@ -93,11 +93,26 @@ a = Analysis(
     hooksconfig={},
     runtime_hooks=[],
 
-    # 明显用不到的 GUI / 绘图库，排除掉能省不少体积
+    # 排除用不到的东西，能省 250MB+ 体积。
+    #
+    # 下面这几个大包都做过实测：
+    # 导入 src.ui（会把 agent / tools / vectorstore 全带起来）
+    # 之后它们【完全没有被加载】，所以可以安全剔除。
     excludes=[
+        # GUI / 绘图，本来就用不到
         "tkinter",
         "matplotlib",
         "PIL.ImageQt",
+
+        # ---- 以下实测未被加载 ----
+        "spacy",        # 90 MB —— 早就不用的 unstructured 的依赖
+        "thinc",        # spacy 的依赖
+        "blis",         # spacy 的依赖
+        "numba",        # pandas 的可选加速，不走它
+        "llvmlite",     # 115 MB —— numba 的依赖
+        "onnxruntime",  # 36 MB —— chromadb 的可选 embedding，我们用 BGE-M3
+        "unstructured", # 已改用 pypdf + python-docx
+        "nltk",         # unstructured 的依赖
     ],
 
     noarchive=False,
@@ -152,6 +167,45 @@ a.binaries = [
         and os.path.dirname(entry[0]) in ("", ".")
     )
 ]
+
+
+# ============================================================
+# 双保险：把用不到的大包从 binaries / datas 里清掉
+# ============================================================
+#
+# Analysis 的 excludes 只作用于「模块依赖图」，
+# 但 collect_all() 是把文件直接塞进 datas / binaries 的，
+# 绕过了依赖图。所以这里再按目录名过滤一遍。
+
+EXCLUDE_PACKAGE_DIRS = {
+    "spacy",
+    "thinc",
+    "blis",
+    "numba",
+    "llvmlite",
+    "onnxruntime",
+    "unstructured",
+    "nltk",
+}
+
+
+def _in_excluded_package(dest):
+    """判断这个文件是不是属于要剔除的包。"""
+
+    parts = str(dest).replace("\\", "/").split("/")
+
+    return any(part.lower() in EXCLUDE_PACKAGE_DIRS for part in parts)
+
+
+_before = len(a.binaries) + len(a.datas)
+
+a.binaries = [e for e in a.binaries if not _in_excluded_package(e[0])]
+a.datas = [e for e in a.datas if not _in_excluded_package(e[0])]
+
+print(
+    f"[spec] 剔除无用包：文件数 {_before} -> "
+    f"{len(a.binaries) + len(a.datas)}"
+)
 
 
 pyz = PYZ(a.pure)
