@@ -1,6 +1,6 @@
 """
 TalentMatch AI
-BGE-M3 模型下载脚本
+Embedding 模型下载脚本
 
 用法：
 
@@ -8,7 +8,7 @@ BGE-M3 模型下载脚本
 
 为什么要单独提供这个脚本？
 
-    1. 模型约 2.3GB，第一次使用时自动下载，
+    1. 模型（bge-m3 约 2.3GB，small 约 180MB），第一次使用时自动下载，
        界面会一直显示 processing，体验很差。
 
     2. huggingface.co 在国内通常无法直连，
@@ -20,7 +20,7 @@ BGE-M3 模型下载脚本
 
 下载完成后，模型会保存在：
 
-    models/bge-m3/
+    models/bge-small-zh-v1.5/
 
 之后 src/vectorstore.py 会自动优先使用这个本地目录，
 不再联网。
@@ -35,15 +35,19 @@ from pathlib import Path
 # 配置
 # ============================================================
 
-REPO_ID = "BAAI/bge-m3"
+# 复用 config 里的路径与模型名，
+# 保证下载位置和程序加载位置完全一致。
+#
+# 源码运行时：项目根目录/models/...
+# 打包成 exe 后：exe 所在目录/models/...
+from src.config import (
+    EMBEDDING_MODEL,
+    LOCAL_EMBEDDING_DIR,
+)
 
-# 复用 config 里的 BASE_DIR：
-# 源码运行时是项目根目录，
-# 打包成 exe 后是 exe 所在目录，
-# 两种情况下模型都放在同一个相对位置。
-from src.config import BASE_DIR
+REPO_ID = EMBEDDING_MODEL
 
-TARGET_DIR = BASE_DIR / "models" / "bge-m3"
+TARGET_DIR = LOCAL_EMBEDDING_DIR
 
 # 默认使用国内镜像；
 # 如需使用官方源，可设置环境变量 HF_ENDPOINT 覆盖。
@@ -76,8 +80,8 @@ ALLOW_PATTERNS = [
 #   imgs/  仓库里的图片与 .DS_Store（镜像上会返回 403，导致整个下载失败）
 #   onnx/  ONNX 版本，体积很大且这里用不到
 #
-# 注意：BAAI/bge-m3 只提供 pytorch_model.bin（约 2.2GB），
-#       没有 model.safetensors，所以 *.bin 必须保留。
+# 说明：bge-small-zh-v1.5 约 180MB，bge-m3 约 2.1GB。
+#       两者都带 pytorch_model.bin，*.bin 必须保留。
 IGNORE_PATTERNS = [
     "imgs/*",
     "onnx/*",
@@ -104,7 +108,7 @@ def main() -> int:
     print(f"[下载] 仓库：{REPO_ID}")
     print(f"[下载] 来源：{os.environ['HF_ENDPOINT']}")
     print(f"[下载] 目录：{TARGET_DIR}")
-    print("[下载] 约 2.3GB，请耐心等待……")
+    print("[下载] （bge-m3 约 2.3GB，small 约 180MB），请耐心等待……")
     print()
 
     try:

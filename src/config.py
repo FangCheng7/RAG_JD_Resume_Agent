@@ -92,7 +92,19 @@ CONFIG_FILE = DATA_DIR / "config.json"
 #   1. 不需要联网
 #   2. 绕开 huggingface.co 在国内无法访问的问题
 #   3. 启动更快
-LOCAL_EMBEDDING_DIR = BASE_DIR / "models" / "bge-m3"
+#
+# 换成了 bge-small-zh-v1.5：
+#   - 体积只有约 183MB（bge-m3 是 2.1GB）
+#   - 可以直接打进分发包，用户不用先下载模型
+#   - 中文语义检索效果足够，512 维
+LOCAL_EMBEDDING_DIR = BASE_DIR / "models" / "bge-small-zh-v1.5"
+
+# Chroma 集合名
+#
+# 换了 Embedding 模型之后向量维度从 1024 变成 512，
+# 旧数据不能再用。集合名带个 v2 隔离，
+# 老数据不会被读到，也不会报维度不匹配。
+COLLECTION_NAME = "jd_resume_chunks_v2"
 
 
 # ============================================================
@@ -300,7 +312,7 @@ def get_model() -> str:
 # 然后向量进入 Chroma。
 EMBEDDING_MODEL = os.getenv(
     "EMBEDDING_MODEL",
-    "BAAI/bge-m3",
+    "BAAI/bge-small-zh-v1.5",
 )
 
 

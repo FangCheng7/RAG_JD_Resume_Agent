@@ -44,6 +44,7 @@ import os
 
 from src.config import (
     CHROMA_DIR,
+    COLLECTION_NAME,
     EMBEDDING_MODEL,
     LOCAL_EMBEDDING_DIR,
 )
@@ -51,7 +52,7 @@ from src.config import (
 from langchain_core.embeddings import Embeddings
 from langchain_chroma import Chroma
 
-from FlagEmbedding import BGEM3FlagModel
+from FlagEmbedding import BGEM3FlagModel, FlagModel
 
 
 # ============================================================
@@ -147,17 +148,39 @@ class BgeM3Embeddings(Embeddings):
                 "python download_model.py 预先下载。"
             )
 
-        # 加载 BGE-M3。
+        # 根据模型类型选择加载器：
         #
-        # use_fp16=False：
-        # 优先保证兼容性。
-        self.model = BGEM3FlagModel(
-            model_path,
-            use_fp16=False,
-        )
+        #   bge-m3              → BGEM3FlagModel
+        #                         encode() 返回 {"dense_vecs": ndarray}
+        #
+        #   bge-small/base-zh   → FlagModel
+        #                         encode() 直接返回 ndarray
+        #
+        # 两者返回结构不同，所以在 _encode() 里统一处理。
+        lowered = str(model_path).lower()
+
+        self.is_m3 = "bge-m3" in lowered
+
+        # bge-m3 支持 8192 长度；small/base 一般用 512
+        self.max_length = 8192 if self.is_m3 else 512
+
+        if self.is_m3:
+
+            self.model = BGEM3FlagModel(
+                model_path,
+                use_fp16=False,
+            )
+
+        else:
+
+            self.model = FlagModel(
+                model_path,
+                use_fp16=False,
+            )
 
         print(
-            "[Embedding] BGE-M3 加载完成。"
+            f"[Embedding] 模型加载完成"
+            f"（{'BGE-M3' if self.is_m3 else 'BGE 中文模型'}）。"
         )
 
 
@@ -187,26 +210,10 @@ class BgeM3Embeddings(Embeddings):
         if not texts:
             return []
 
-        result = self.model.encode(
+        return self._encode(
             texts,
             batch_size=8,
-            max_length=8192,
         )
-
-        vectors = result["dense_vecs"]
-
-        # NumPy Array → Python List
-        if hasattr(
-            vectors,
-            "tolist",
-        ):
-
-            return vectors.tolist()
-
-        return [
-            list(vector)
-            for vector in vectors
-        ]
 
 
     # ========================================================
@@ -233,22 +240,49 @@ class BgeM3Embeddings(Embeddings):
         Query Vector
         """
 
-        result = self.model.encode(
+        return self._encode(
             [text],
             batch_size=1,
-            max_length=8192,
+        )[0]
+
+
+    # ========================================================
+    # 统一编码入口
+    # ========================================================
+
+    def _encode(
+        self,
+        texts: list[str],
+        batch_size: int,
+    ) -> list[list[float]]:
+        """
+        把文本编码成向量列表。
+
+        之所以要单独抽出来，是因为两种模型的返回结构不一样：
+
+            BGEM3FlagModel.encode()  →  {"dense_vecs": ndarray}
+            FlagModel.encode()       →  ndarray
+
+        这里统一转换成 Python 的 list[list[float]]。
+        """
+
+        result = self.model.encode(
+            texts,
+            batch_size=batch_size,
+            max_length=self.max_length,
         )
 
-        vector = result["dense_vecs"][0]
+        # BGEM3 返回字典，取 dense_vecs
+        if isinstance(result, dict):
 
-        if hasattr(
-            vector,
-            "tolist",
-        ):
+            result = result["dense_vecs"]
 
-            return vector.tolist()
+        # numpy array → list
+        if hasattr(result, "tolist"):
 
-        return list(vector)
+            return result.tolist()
+
+        return [list(vector) for vector in result]
 
 
 # ============================================================
@@ -260,7 +294,7 @@ def get_embeddings() -> BgeM3Embeddings:
     """
     获取 Embedding 模型。
 
-    使用缓存避免每次查询都重新加载 BGE-M3。
+    使用缓存避免每次查询都重新加载 Embedding 模型。
     """
 
     return BgeM3Embeddings()
@@ -288,7 +322,7 @@ def get_vectorstore() -> Chroma:
     )
 
     store = Chroma(
-        collection_name="jd_resume_chunks",
+        collection_name=COLLECTION_NAME,
 
         # 使用 BGE-M3。
         embedding_function=get_embeddings(),

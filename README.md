@@ -17,8 +17,7 @@
 到 **[Releases](https://github.com/FangCheng7/RAG_JD_Resume_Agent/releases/latest)** 下载 `TalentMatchAI.zip`，
 解压后双击 `TalentMatchAI.exe` 即可使用（会自动打开浏览器）。
 
-> - 首次运行需要联网下载 BGE-M3 模型（约 2.3GB）；
->   也可以把已下好的 `models/bge-m3` 文件夹放到 exe 同级目录，跳过这步。
+> - **向量模型已内置在压缩包里，下载即用，不需要联网下载模型。**
 > - 详细说明见压缩包内的 `启动说明.txt`。
 > - 需要 VC++ 运行库（Win10/11 一般自带，老系统装
 >   [vc_redist.x64.exe](https://aka.ms/vs/17/release/vc_redist.x64.exe) 即可）。
@@ -32,7 +31,7 @@
 | 语言 | Python 3.11+ |
 | Agent | LangGraph / LangChain |
 | LLM | DeepSeek（OpenAI 兼容接口） |
-| Embedding | BGE-M3（本地运行） |
+| Embedding | BGE-small-zh-v1.5（本地运行，随包分发） |
 | 向量库 | Chroma |
 | 文档解析 | pypdf（PDF）+ python-docx（DOCX） |
 | 前端 | Gradio |
@@ -46,7 +45,7 @@
 批量上传 JD（PDF / DOCX），或直接粘贴文本，自动完成：
 
 ```
-文档 → 文本解析 → Chunk → BGE-M3 → Chroma
+文档 → 文本解析 → Chunk → BGE-small-zh → Chroma
 ```
 
 ### 2. 简历知识库
@@ -103,9 +102,9 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-> 首次运行需要 BGE-M3 模型（约 2.3GB）。
+> 首次运行需要 Embedding 模型（约 180MB）。
 > 国内网络无法直连 huggingface.co，
-> 请先执行一次 `python download_model.py` 预下载（默认走 hf-mirror.com 镜像）。
+> 请先执行一次 `python download_model.py` 下载（默认走 hf-mirror.com 镜像）。
 
 ### 2. 配置 API Key
 
@@ -118,13 +117,14 @@ DEEPSEEK_API_KEY=sk-your-own-key
 也可以直接启动后在 **系统设置** 页面填写，配置会保存到
 `data/config.json`（该文件已被 `.gitignore` 忽略）。
 
-### 3. 预下载向量模型（重要）
+### 3. 下载向量模型（仅源码运行需要）
 
 ```bash
 python download_model.py
 ```
 
-约 2.3GB，默认使用国内镜像 `hf-mirror.com`。
+约 180MB，默认使用国内镜像 `hf-mirror.com`。
+> （打包成 exe 时会自动带上模型，最终用户无需下载。）
 下载后再启动，就不会出现「页面一直 processing」。
 
 ### 4. 打包成 exe（可选，给别人用）
@@ -148,8 +148,8 @@ dist/TalentMatchAI/TalentMatchAI.exe
 
 把整个 `TalentMatchAI` 文件夹压缩后发给别人，对方解压后双击 exe 即可使用（会自动打开浏览器）。
 
-> **首次运行**需要联网下载 BGE-M3 模型（约 2.3GB），
-> 也可以把已经下好的 `models/bge-m3` 文件夹放到 exe 同级目录，跳过这步。
+> **模型已随包分发**（打包脚本会自动把 `models/` 复制进产物），
+> 最终用户下载解压后直接双击即可使用，不需要任何额外下载。
 
 ### 5. 启动
 
@@ -178,7 +178,7 @@ rag_jd_resume_agent/
     ├── services.py        # 业务服务层（统计 / 列表 / 删除）
     ├── tools.py           # Agent 工具
     ├── ui.py              # Gradio 前端
-    └── vectorstore.py     # BGE-M3 + Chroma
+    └── vectorstore.py     # BGE Embedding + Chroma
 ```
 
 ---

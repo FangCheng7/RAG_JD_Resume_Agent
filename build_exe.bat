@@ -16,7 +16,7 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 
-echo [1/4] 安装 PyInstaller ...
+echo [1/5] 安装 PyInstaller ...
 ".venv\Scripts\python.exe" -m pip install --disable-pip-version-check pyinstaller
 if errorlevel 1 (
     echo [错误] PyInstaller 安装失败
@@ -25,7 +25,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [2/4] 开始打包（首次约 5-15 分钟，请耐心等待）...
+echo [2/5] 开始打包（首次约 5-15 分钟，请耐心等待）...
 
 rem ------------------------------------------------------------
 rem 默认输出到项目下的 dist\TalentMatchAI\
@@ -44,7 +44,7 @@ if errorlevel 1 (
 )
 
 echo.
-echo [3/4] 复制使用说明到输出目录 ...
+echo [3/5] 复制使用说明到输出目录 ...
 if exist "启动说明.txt" (
     copy /y "启动说明.txt" "%DIST%\TalentMatchAI\启动说明.txt" >nul
     echo   已复制 启动说明.txt
@@ -53,7 +53,19 @@ if exist "启动说明.txt" (
 )
 
 echo.
-echo [4/4] 打包完成！
+echo [4/5] 复制 Embedding 模型到输出目录 ...
+rem 把模型一起打进分发包，别人下载后就不用再下模型了。
+if exist "models" (
+    robocopy "models" "%DIST%\TalentMatchAI\models" /E /NFL /NDL /NJH /NJS /NP >nul
+    echo   已复制 models\ 文件夹
+) else (
+    echo   [警告] 没找到 models 文件夹！
+    echo          请先运行: .venv\Scripts\python.exe download_model.py
+    echo          否则别人用的时候会联网下载模型。
+)
+
+echo.
+echo [5/5] 打包完成！
 echo.
 echo   输出目录：%DIST%\TalentMatchAI\
 echo   可执行文件：%DIST%\TalentMatchAI\TalentMatchAI.exe

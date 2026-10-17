@@ -56,8 +56,8 @@ from src.config import CHROMA_DIR, UPLOAD_DIR
 # Chroma 常量
 # ============================================================
 
-# 必须和 vectorstore.py 中的 collection_name 保持一致。
-COLLECTION_NAME = "jd_resume_chunks"
+# 复用 config 里的常量，保证和 vectorstore.py 一致。
+from src.config import COLLECTION_NAME
 
 
 # ============================================================
